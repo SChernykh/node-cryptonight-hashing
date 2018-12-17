@@ -22,35 +22,56 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef XMRIG_CRYPTONIGHT_H
-#define XMRIG_CRYPTONIGHT_H
+#ifndef __MEM_H__
+#define __MEM_H__
 
 
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef _MSC_VER
-#define ABI_ATTRIBUTE
-#else
-#define ABI_ATTRIBUTE __attribute__((ms_abi))
-#endif
+
+#include "common/xmrig.h"
+
 
 struct cryptonight_ctx;
-typedef void(*cn_mainloop_fun)(cryptonight_ctx*) ABI_ATTRIBUTE;
-typedef void(*cn_mainloop_double_fun)(cryptonight_ctx*, cryptonight_ctx*) ABI_ATTRIBUTE;
 
-struct cryptonight_ctx {
-    alignas(16) uint8_t state[224];
+
+struct MemInfo
+{
     alignas(16) uint8_t *memory;
-    cn_mainloop_fun generated_code;
-    cn_mainloop_fun generated_code64;
-    cn_mainloop_double_fun generated_code_double;
-    cn_mainloop_double_fun generated_code64_double;
-    uint64_t generated_code_height;
-    uint64_t generated_code64_height;
-    uint64_t generated_code_double_height;
-    uint64_t generated_code64_double_height;
+
+    size_t hugePages;
+    size_t pages;
+    size_t size;
 };
 
 
-#endif /* XMRIG_CRYPTONIGHT_H */
+class Mem
+{
+public:
+    enum Flags {
+        HugepagesAvailable = 1,
+        HugepagesEnabled   = 2,
+        Lock               = 4
+    };
+
+    static MemInfo create(cryptonight_ctx **ctx, xmrig::Algo algorithm, size_t count);
+    static void init(bool enabled);
+    static void release(cryptonight_ctx **ctx, size_t count, MemInfo &info);
+
+    static void FlushInstructionCache(void* p, size_t size);
+
+    static inline bool isHugepagesAvailable() { return (m_flags & HugepagesAvailable) != 0; }
+
+private:
+    static void allocate(MemInfo &info, bool enabled);
+    static void release(MemInfo &info);
+
+    static void* allocate_executable_memory(size_t size);
+
+    static int m_flags;
+    static bool m_enabled;
+};
+
+
+#endif /* __MEM_H__ */

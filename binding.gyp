@@ -4,12 +4,17 @@
             "target_name": "cryptonight-hashing",
             "sources": [
                 '<!@(uname -a | grep "x86_64" >/dev/null && echo "xmrig/crypto/asm/cnv2_main_loop.S" || echo)',
+                '<!@(uname -a | grep "x86_64" >/dev/null && echo "xmrig/crypto/asm/CryptonightR_template.S" || echo)',
+                '<!@(uname -a | grep "x86_64" >/dev/null && echo "xmrig/crypto/asm/CryptonightR_64_template.S" || echo)',
                 "multihashing.cc",
                 "xmrig/crypto/c_blake256.c",
                 "xmrig/crypto/c_groestl.c",
                 "xmrig/crypto/c_jh.c",
                 "xmrig/crypto/c_skein.c",
-                "xmrig/common/crypto/keccak.cpp"
+                "xmrig/crypto/CryptonightR_gen.cpp",
+                "xmrig/common/crypto/keccak.cpp",
+                "xmrig/Mem.cpp",
+                "xmrig/Mem_unix.cpp"
             ],
             "include_dirs": [
                 "xmrig",

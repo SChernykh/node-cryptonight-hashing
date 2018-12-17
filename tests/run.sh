@@ -10,6 +10,8 @@ node test_async_light.js
 node test_async_heavy.js
 node test_sync-1.js
 node test_sync-2.js
+node test_sync-r.js
+node test_sync-r64.js
 node test_sync-xtl.js
 node test_sync-msr.js
 node test_sync-xao.js
