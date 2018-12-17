@@ -407,7 +407,7 @@ static inline void cryptonight_monero_tweak(const uint8_t* l, uint64_t idx, __m1
 {
     uint64_t* mem_out = (uint64_t*)&l[idx];
 
-    if ((VARIANT == xmrig::VARIANT_2) || (VARIANT == xmrig::VARIANT_4)) {
+    if (xmrig::cn_use_shuffle<VARIANT>()) {
         VARIANT2_SHUFFLE(l, idx, ax0, bx0, bx1);
         _mm_store_si128((__m128i *)mem_out, _mm_xor_si128(bx0, cx));
     } else {
@@ -433,6 +433,7 @@ inline void cryptonight_single_hash(const uint8_t *__restrict__ input, size_t si
     constexpr size_t ITERATIONS = xmrig::cn_select_iter<ALGO, VARIANT>();
     constexpr size_t MEM        = xmrig::cn_select_memory<ALGO>();
     constexpr bool IS_V1        = xmrig::cn_base_variant<VARIANT>() == xmrig::VARIANT_1;
+    constexpr bool IS_SHUFFLE   = xmrig::cn_use_shuffle<VARIANT>();
 
     if (IS_V1 && size < 43) {
         memset(output, 0, 32);
@@ -474,7 +475,7 @@ inline void cryptonight_single_hash(const uint8_t *__restrict__ input, size_t si
             cx = _mm_aesenc_si128(cx, ax0);
         }
 
-        if (IS_V1 || VARIANT == xmrig::VARIANT_2 || VARIANT == xmrig::VARIANT_4) {
+        if (IS_V1 || IS_SHUFFLE) {
             cryptonight_monero_tweak<VARIANT>(l0, idx0 & MASK, ax0, bx0, bx1, cx);
         } else {
             _mm_store_si128((__m128i *)&l0[idx0 & MASK], _mm_xor_si128(bx0, cx));
@@ -485,18 +486,18 @@ inline void cryptonight_single_hash(const uint8_t *__restrict__ input, size_t si
         uint64_t hi, lo, cl, ch;
         cl = ((uint64_t*) &l0[idx0 & MASK])[0];
         ch = ((uint64_t*) &l0[idx0 & MASK])[1];
-        if ((VARIANT == xmrig::VARIANT_2) || (VARIANT == xmrig::VARIANT_4)) {
-            if (VARIANT == xmrig::VARIANT_2) {
-                VARIANT2_INTEGER_MATH(0, cl, cx);
-            }
-            else {
-                VARIANT4_RANDOM_MATH(0, al0, ah0, cl, bx0, bx1);
-            }
-            lo = __umul128(idx0, cl, &hi);
-            VARIANT2_SHUFFLE2(l0, idx0 & MASK, ax0, bx0, bx1, hi, lo);
+
+        if (VARIANT == xmrig::VARIANT_2) {
+            VARIANT2_INTEGER_MATH(0, cl, cx);
         }
-        else {
-            lo = __umul128(idx0, cl, &hi);
+        else if ((VARIANT == xmrig::VARIANT_4) || (VARIANT == xmrig::VARIANT_4_64)) {
+            VARIANT4_RANDOM_MATH(0, al0, ah0, cl, bx0, bx1);
+        }
+
+        lo = __umul128(idx0, cl, &hi);
+
+        if (IS_SHUFFLE) {
+            VARIANT2_SHUFFLE2(l0, idx0 & MASK, ax0, bx0, bx1, hi, lo);
         }
 
         al0 += hi;
@@ -531,7 +532,7 @@ inline void cryptonight_single_hash(const uint8_t *__restrict__ input, size_t si
                 idx0 = d ^ q;
             }
         }
-        if ((VARIANT == xmrig::VARIANT_2) || (VARIANT == xmrig::VARIANT_4)) {
+        if (IS_SHUFFLE) {
             bx1 = bx0;
         }
         bx0 = cx;
@@ -551,6 +552,7 @@ inline void cryptonight_double_hash(const uint8_t *__restrict__ input, size_t si
     constexpr size_t ITERATIONS = xmrig::cn_select_iter<ALGO, VARIANT>();
     constexpr size_t MEM        = xmrig::cn_select_memory<ALGO>();
     constexpr bool IS_V1        = xmrig::cn_base_variant<VARIANT>() == xmrig::VARIANT_1;
+    constexpr bool IS_SHUFFLE   = xmrig::cn_use_shuffle<VARIANT>();
 
     if (IS_V1 && size < 43) {
         memset(output, 0, 64);
@@ -610,7 +612,7 @@ inline void cryptonight_double_hash(const uint8_t *__restrict__ input, size_t si
             cx1 = _mm_aesenc_si128(cx1, ax1);
         }
 
-        if (IS_V1 || (VARIANT == xmrig::VARIANT_2) || (VARIANT == xmrig::VARIANT_4)) {
+        if (IS_V1 || IS_SHUFFLE) {
             cryptonight_monero_tweak<VARIANT>(l0, idx0 & MASK, ax0, bx00, bx01, cx0);
             cryptonight_monero_tweak<VARIANT>(l1, idx1 & MASK, ax1, bx10, bx11, cx1);
         } else {
@@ -624,17 +626,18 @@ inline void cryptonight_double_hash(const uint8_t *__restrict__ input, size_t si
         uint64_t hi, lo, cl, ch;
         cl = ((uint64_t*) &l0[idx0 & MASK])[0];
         ch = ((uint64_t*) &l0[idx0 & MASK])[1];
-        if ((VARIANT == xmrig::VARIANT_2) || (VARIANT == xmrig::VARIANT_4)) {
-            if (VARIANT == xmrig::VARIANT_2) {
-                VARIANT2_INTEGER_MATH(0, cl, cx0);
-            }
-            else {
-                VARIANT4_RANDOM_MATH(0, al0, ah0, cl, bx00, bx01);
-            }
-            lo = __umul128(idx0, cl, &hi);
+
+        if (VARIANT == xmrig::VARIANT_2) {
+            VARIANT2_INTEGER_MATH(0, cl, cx0);
+        }
+        else if ((VARIANT == xmrig::VARIANT_4) || (VARIANT == xmrig::VARIANT_4_64)) {
+            VARIANT4_RANDOM_MATH(0, al0, ah0, cl, bx00, bx01);
+        }
+
+        lo = __umul128(idx0, cl, &hi);
+
+        if (IS_SHUFFLE) {
             VARIANT2_SHUFFLE2(l0, idx0 & MASK, ax0, bx00, bx01, hi, lo);
-        } else {
-            lo = __umul128(idx0, cl, &hi);
         }
 
         al0 += hi;
@@ -672,17 +675,18 @@ inline void cryptonight_double_hash(const uint8_t *__restrict__ input, size_t si
 
         cl = ((uint64_t*) &l1[idx1 & MASK])[0];
         ch = ((uint64_t*) &l1[idx1 & MASK])[1];
-        if ((VARIANT == xmrig::VARIANT_2) || (VARIANT == xmrig::VARIANT_4)) {
-            if (VARIANT == xmrig::VARIANT_2) {
-                VARIANT2_INTEGER_MATH(1, cl, cx1);
-            }
-            else {
-                VARIANT4_RANDOM_MATH(1, al1, ah1, cl, bx10, bx11);
-            }
-            lo = __umul128(idx1, cl, &hi);
+
+        if (VARIANT == xmrig::VARIANT_2) {
+            VARIANT2_INTEGER_MATH(1, cl, cx1);
+        }
+        else if ((VARIANT == xmrig::VARIANT_4) || (VARIANT == xmrig::VARIANT_4_64)) {
+            VARIANT4_RANDOM_MATH(1, al1, ah1, cl, bx10, bx11);
+        }
+
+        lo = __umul128(idx1, cl, &hi);
+
+        if (IS_SHUFFLE) {
             VARIANT2_SHUFFLE2(l1, idx1 & MASK, ax1, bx10, bx11, hi, lo);
-        } else {
-            lo = __umul128(idx1, cl, &hi);
         }
 
         al1 += hi;
@@ -717,7 +721,7 @@ inline void cryptonight_double_hash(const uint8_t *__restrict__ input, size_t si
                 idx1 = d ^ q;
             }
         }
-        if ((VARIANT == xmrig::VARIANT_2) || (VARIANT == xmrig::VARIANT_4)) {
+        if (IS_SHUFFLE) {
             bx01 = bx00;
             bx11 = bx10;
         }
