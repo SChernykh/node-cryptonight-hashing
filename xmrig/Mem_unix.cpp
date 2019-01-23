@@ -6,7 +6,8 @@
  * Copyright 2016      Jay D Dee   <jayddee246@gmail.com>
  * Copyright 2017-2018 XMR-Stak    <https://github.com/fireice-uk>, <https://github.com/psychocrypt>
  * Copyright 2018      Lee Clagett <https://github.com/vtnerd>
- * Copyright 2016-2018 XMRig       <https://github.com/xmrig>, <support@xmrig.com>
+ * Copyright 2018-2019 SChernykh   <https://github.com/SChernykh>
+ * Copyright 2016-2019 XMRig       <https://github.com/xmrig>, <support@xmrig.com>
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -27,6 +28,7 @@
 #include <sys/mman.h>
 
 
+#include "common/log/Log.h"
 #include "common/utils/mm_malloc.h"
 #include "common/xmrig.h"
 #include "crypto/CryptoNight.h"
@@ -64,7 +66,7 @@ void Mem::allocate(MemInfo &info, bool enabled)
     info.hugePages = info.pages;
 
     if (madvise(info.memory, info.size, MADV_RANDOM | MADV_WILLNEED) != 0) {
-        //LOG_ERR("madvise failed");
+        LOG_ERR("madvise failed");
     }
 
     if (mlock(info.memory, info.size) == 0) {
@@ -88,7 +90,7 @@ void Mem::release(MemInfo &info)
 }
 
 
-void* Mem::allocate_executable_memory(size_t size)
+void *Mem::allocateExecutableMemory(size_t size)
 {
 #   if defined(__APPLE__)
     return mmap(0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
@@ -98,7 +100,15 @@ void* Mem::allocate_executable_memory(size_t size)
 }
 
 
-void Mem::FlushInstructionCache(void* p, size_t size)
+void Mem::protectExecutableMemory(void *p, size_t size)
 {
+    mprotect(p, size, PROT_READ | PROT_EXEC);
+}
+
+
+void Mem::flushInstructionCache(void *p, size_t size)
+{
+#   ifndef __FreeBSD__
     __builtin___clear_cache(reinterpret_cast<char*>(p), reinterpret_cast<char*>(p) + size);
+#   endif
 }

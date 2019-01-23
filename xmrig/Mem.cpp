@@ -6,7 +6,8 @@
  * Copyright 2016      Jay D Dee   <jayddee246@gmail.com>
  * Copyright 2017-2018 XMR-Stak    <https://github.com/fireice-uk>, <https://github.com/psychocrypt>
  * Copyright 2018      Lee Clagett <https://github.com/vtnerd>
- * Copyright 2016-2018 XMRig       <https://github.com/xmrig>, <support@xmrig.com>
+ * Copyright 2018-2019 SChernykh   <https://github.com/SChernykh>
+ * Copyright 2016-2019 XMRig       <https://github.com/xmrig>, <support@xmrig.com>
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -33,7 +34,6 @@ bool Mem::m_enabled = true;
 int Mem::m_flags    = 0;
 
 
-
 MemInfo Mem::create(cryptonight_ctx **ctx, xmrig::Algo algorithm, size_t count)
 {
     using namespace xmrig;
@@ -41,11 +41,9 @@ MemInfo Mem::create(cryptonight_ctx **ctx, xmrig::Algo algorithm, size_t count)
     MemInfo info;
     info.size = cn_select_memory(algorithm) * count;
 
-#   ifndef XMRIG_NO_AEON
-    info.size += info.size % cn_select_memory<CRYPTONIGHT>();
-#   endif
-
-    info.pages = info.size / cn_select_memory<CRYPTONIGHT>();
+    constexpr const size_t align_size = 2 * 1024 * 1024;
+    info.size  = ((info.size + align_size - 1) / align_size) * align_size;
+    info.pages = info.size / align_size;
 
     allocate(info, m_enabled);
 
@@ -53,11 +51,11 @@ MemInfo Mem::create(cryptonight_ctx **ctx, xmrig::Algo algorithm, size_t count)
         cryptonight_ctx *c = static_cast<cryptonight_ctx *>(_mm_malloc(sizeof(cryptonight_ctx), 4096));
         c->memory          = info.memory + (i * cn_select_memory(algorithm));
 
-        uint8_t* p = reinterpret_cast<uint8_t*>(allocate_executable_memory(0x4000));
-        c->generated_code  = reinterpret_cast<cn_mainloop_fun>(p);
-        c->generated_code64 = reinterpret_cast<cn_mainloop_fun>(p + 0x1000);
-        c->generated_code_double = reinterpret_cast<cn_mainloop_double_fun>(p + 0x2000);
-        c->generated_code64_double = reinterpret_cast<cn_mainloop_double_fun>(p + 0x3000);
+        uint8_t* p = reinterpret_cast<uint8_t*>(allocateExecutableMemory(0x4000));
+        c->generated_code  = reinterpret_cast<cn_mainloop_fun_ms_abi>(p);
+        c->generated_code64 = reinterpret_cast<cn_mainloop_fun_ms_abi>(p + 0x1000);
+        c->generated_code_double = reinterpret_cast<cn_mainloop_double_fun_ms_abi>(p + 0x2000);
+        c->generated_code64_double = reinterpret_cast<cn_mainloop_double_fun_ms_abi>(p + 0x3000);
         c->generated_code_height = (uint64_t)(-1);
         c->generated_code64_height = (uint64_t)(-1);
         c->generated_code_double_height = (uint64_t)(-1);
