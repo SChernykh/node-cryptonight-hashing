@@ -6,6 +6,8 @@ cd $DIR
 node compare_both.js
 node test.js
 node test_async.js
+node test_async-r.js
+node test_async-r64.js
 node test_async_light.js
 node test_async_heavy.js
 node test_sync-1.js

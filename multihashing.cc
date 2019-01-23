@@ -105,7 +105,7 @@ NAN_METHOD(cryptonight) {
 #endif
 		break;
        case 11:
-                if (!height_set) return THROW_ERROR_EXCEPTION("Cryptonight R requires block template height as Argument 3");
+                if (!height_set) return THROW_ERROR_EXCEPTION("CryptonightR requires block template height as Argument 3");
 
 #if !SOFT_AES && (defined(CPU_INTEL) || defined(CPU_AMD))
                 cryptonight_single_hash_asm<xmrig::CRYPTONIGHT, xmrig::VARIANT_4, xmrig::ASM_AUTO>  (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx, height);
@@ -114,7 +114,7 @@ NAN_METHOD(cryptonight) {
 #endif
                 break;
        case 12:
-                if (!height_set) return THROW_ERROR_EXCEPTION("Cryptonight R requires block template height as Argument 3");
+                if (!height_set) return THROW_ERROR_EXCEPTION("CryptonightR requires block template height as Argument 3");
 
 #if !SOFT_AES && (defined(CPU_INTEL) || defined(CPU_AMD))
                 cryptonight_single_hash_asm<xmrig::CRYPTONIGHT, xmrig::VARIANT_4_64, xmrig::ASM_AUTO>  (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx, height);
@@ -309,8 +309,8 @@ NAN_METHOD(cryptonight_async) {
         callback_arg_num = 3;
     }
 
-    if (((variant == 9) || (variant == 10)) && (callback_arg_num < 3)) {
-        return THROW_ERROR_EXCEPTION("Cryptonight R requires block template height as Argument 3");
+    if (((variant == xmrig::VARIANT_4) || (variant == xmrig::VARIANT_4_64)) && (callback_arg_num < 3)) {
+        return THROW_ERROR_EXCEPTION("CryptonightR requires block template height as Argument 3");
     }
 
     Callback *callback = new Nan::Callback(info[callback_arg_num].As<v8::Function>());
