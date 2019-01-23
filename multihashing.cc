@@ -93,18 +93,18 @@ NAN_METHOD(cryptonight) {
        case 9:
 #if !SOFT_AES && defined(CPU_INTEL)
                 #warning Using IvyBridge assembler implementation
-                cryptonight_single_hash_asm<xmrig::CRYPTONIGHT, xmrig::VARIANT_HALF, xmrig::ASM_INTEL>     (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx);
+                cryptonight_single_hash_asm<xmrig::CRYPTONIGHT, xmrig::VARIANT_HALF, xmrig::ASM_INTEL>     (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx, height);
 #elif !SOFT_AES && defined(CPU_AMD)
                 #warning Using Ryzen assembler implementation
-                cryptonight_single_hash_asm<xmrig::CRYPTONIGHT, xmrig::VARIANT_HALF, xmrig::ASM_RYZEN>     (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx);
+                cryptonight_single_hash_asm<xmrig::CRYPTONIGHT, xmrig::VARIANT_HALF, xmrig::ASM_RYZEN>     (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx, height);
 #elif !SOFT_AES && defined(CPU_AMD_OLD)
                 #warning Using Bulldozer assembler implementation
-                cryptonight_single_hash_asm<xmrig::CRYPTONIGHT, xmrig::VARIANT_HALF, xmrig::ASM_BULLDOZER> (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx);
+                cryptonight_single_hash_asm<xmrig::CRYPTONIGHT, xmrig::VARIANT_HALF, xmrig::ASM_BULLDOZER> (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx, height);
 #else
-                cryptonight_single_hash    <xmrig::CRYPTONIGHT, SOFT_AES, xmrig::VARIANT_HALF>             (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx);
+                cryptonight_single_hash    <xmrig::CRYPTONIGHT, SOFT_AES, xmrig::VARIANT_HALF>             (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx, height);
 #endif
 		break;
-       case 10:
+       case 11:
                 if (!height_set) return THROW_ERROR_EXCEPTION("Cryptonight R requires block template height as Argument 3");
 
 #if !SOFT_AES && (defined(CPU_INTEL) || defined(CPU_AMD))
@@ -113,7 +113,7 @@ NAN_METHOD(cryptonight) {
                 cryptonight_single_hash    <xmrig::CRYPTONIGHT, SOFT_AES, xmrig::VARIANT_4>         (reinterpret_cast<const uint8_t*>(Buffer::Data(target)), Buffer::Length(target), reinterpret_cast<uint8_t*>(output), &ctx, height);
 #endif
                 break;
-       case 11:
+       case 12:
                 if (!height_set) return THROW_ERROR_EXCEPTION("Cryptonight R requires block template height as Argument 3");
 
 #if !SOFT_AES && (defined(CPU_INTEL) || defined(CPU_AMD))
@@ -259,6 +259,20 @@ class CCryptonightAsync : public Nan::AsyncWorker {
                          cryptonight_single_hash<xmrig::CRYPTONIGHT, SOFT_AES, xmrig::VARIANT_HALF>                 (reinterpret_cast<const uint8_t*>(m_input), m_input_len, reinterpret_cast<uint8_t*>(m_output), &m_ctx, m_height);
 #endif
                          break;
+       case 11:
+#if !SOFT_AES && (defined(CPU_INTEL) || defined(CPU_AMD))
+                cryptonight_single_hash_asm<xmrig::CRYPTONIGHT, xmrig::VARIANT_4, xmrig::ASM_AUTO>  (reinterpret_cast<const uint8_t*>(m_input), m_input_len, reinterpret_cast<uint8_t*>(m_output), &m_ctx, m_height);
+#else
+                cryptonight_single_hash    <xmrig::CRYPTONIGHT, SOFT_AES, xmrig::VARIANT_4>         (reinterpret_cast<const uint8_t*>(m_input), m_input_len, reinterpret_cast<uint8_t*>(m_output), &m_ctx, m_height);
+#endif
+                break;
+       case 12:
+#if !SOFT_AES && (defined(CPU_INTEL) || defined(CPU_AMD))
+                cryptonight_single_hash_asm<xmrig::CRYPTONIGHT, xmrig::VARIANT_4_64, xmrig::ASM_AUTO>  (reinterpret_cast<const uint8_t*>(m_input), m_input_len, reinterpret_cast<uint8_t*>(m_output), &m_ctx, m_height);
+#else
+                cryptonight_single_hash    <xmrig::CRYPTONIGHT, SOFT_AES, xmrig::VARIANT_4_64>         (reinterpret_cast<const uint8_t*>(m_input), m_input_len, reinterpret_cast<uint8_t*>(m_output), &m_ctx, m_height);
+#endif
+                break;
                 default: cryptonight_single_hash<xmrig::CRYPTONIGHT, SOFT_AES, xmrig::VARIANT_1>  (reinterpret_cast<const uint8_t*>(m_input), m_input_len, reinterpret_cast<uint8_t*>(m_output), &m_ctx, m_height);
             }
         }
@@ -448,7 +462,90 @@ NAN_METHOD(cryptonight_heavy_async) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+template<typename T, typename U>
+static void patchCode(T dst, U src, const uint32_t iterations, const uint32_t mask)
+{
+    const uint8_t* p = reinterpret_cast<const uint8_t*>(src);
+
+    // Workaround for Visual Studio placing trampoline in debug builds.
+#   if defined(_MSC_VER)
+    if (p[0] == 0xE9) {
+        p += *(int32_t*)(p + 1) + 5;
+    }
+#   endif
+
+    size_t size = 0;
+    while (*(uint32_t*)(p + size) != 0xDEADC0DE) {
+        ++size;
+    }
+    size += sizeof(uint32_t);
+
+    memcpy((void*) dst, (const void*) src, size);
+
+    uint8_t* patched_data = reinterpret_cast<uint8_t*>(dst);
+    for (size_t i = 0; i + sizeof(uint32_t) <= size; ++i) {
+        switch (*(uint32_t*)(patched_data + i)) {
+        case xmrig::CRYPTONIGHT_ITER:
+            *(uint32_t*)(patched_data + i) = iterations;
+            break;
+
+        case xmrig::CRYPTONIGHT_MASK:
+            *(uint32_t*)(patched_data + i) = mask;
+            break;
+        }
+    }
+}
+
+
+extern "C" void cnv2_mainloop_ivybridge_asm(cryptonight_ctx *ctx);
+extern "C" void cnv2_mainloop_ryzen_asm(cryptonight_ctx *ctx);
+extern "C" void cnv2_mainloop_bulldozer_asm(cryptonight_ctx *ctx);
+extern "C" void cnv2_double_mainloop_sandybridge_asm(cryptonight_ctx *ctx0, cryptonight_ctx *ctx1);
+
+
+xmrig::CpuThread::cn_mainloop_fun        cn_half_mainloop_ivybridge_asm          = nullptr;
+xmrig::CpuThread::cn_mainloop_fun        cn_half_mainloop_ryzen_asm              = nullptr;
+xmrig::CpuThread::cn_mainloop_fun        cn_half_mainloop_bulldozer_asm          = nullptr;
+xmrig::CpuThread::cn_mainloop_double_fun cn_half_double_mainloop_sandybridge_asm = nullptr;
+
+xmrig::CpuThread::cn_mainloop_fun        cn_trtl_mainloop_ivybridge_asm          = nullptr;
+xmrig::CpuThread::cn_mainloop_fun        cn_trtl_mainloop_ryzen_asm              = nullptr;
+xmrig::CpuThread::cn_mainloop_fun        cn_trtl_mainloop_bulldozer_asm          = nullptr;
+xmrig::CpuThread::cn_mainloop_double_fun cn_trtl_double_mainloop_sandybridge_asm = nullptr;
+
+
+static void patchAsmVariants()
+{
+    const int allocation_size = 65536;
+    uint8_t *base = static_cast<uint8_t *>(Mem::allocateExecutableMemory(allocation_size));
+
+    cn_half_mainloop_ivybridge_asm              = reinterpret_cast<xmrig::CpuThread::cn_mainloop_fun>         (base + 0x0000);
+    cn_half_mainloop_ryzen_asm                  = reinterpret_cast<xmrig::CpuThread::cn_mainloop_fun>         (base + 0x1000);
+    cn_half_mainloop_bulldozer_asm              = reinterpret_cast<xmrig::CpuThread::cn_mainloop_fun>         (base + 0x2000);
+    cn_half_double_mainloop_sandybridge_asm     = reinterpret_cast<xmrig::CpuThread::cn_mainloop_double_fun>  (base + 0x3000);
+
+    cn_trtl_mainloop_ivybridge_asm              = reinterpret_cast<xmrig::CpuThread::cn_mainloop_fun>         (base + 0x4000);
+    cn_trtl_mainloop_ryzen_asm                  = reinterpret_cast<xmrig::CpuThread::cn_mainloop_fun>         (base + 0x5000);
+    cn_trtl_mainloop_bulldozer_asm              = reinterpret_cast<xmrig::CpuThread::cn_mainloop_fun>         (base + 0x6000);
+    cn_trtl_double_mainloop_sandybridge_asm     = reinterpret_cast<xmrig::CpuThread::cn_mainloop_double_fun>  (base + 0x7000);
+
+    patchCode(cn_half_mainloop_ivybridge_asm,           cnv2_mainloop_ivybridge_asm,            xmrig::CRYPTONIGHT_HALF_ITER,   xmrig::CRYPTONIGHT_MASK);
+    patchCode(cn_half_mainloop_ryzen_asm,               cnv2_mainloop_ryzen_asm,                xmrig::CRYPTONIGHT_HALF_ITER,   xmrig::CRYPTONIGHT_MASK);
+    patchCode(cn_half_mainloop_bulldozer_asm,           cnv2_mainloop_bulldozer_asm,            xmrig::CRYPTONIGHT_HALF_ITER,   xmrig::CRYPTONIGHT_MASK);
+    patchCode(cn_half_double_mainloop_sandybridge_asm,  cnv2_double_mainloop_sandybridge_asm,   xmrig::CRYPTONIGHT_HALF_ITER,   xmrig::CRYPTONIGHT_MASK);
+
+    patchCode(cn_trtl_mainloop_ivybridge_asm,           cnv2_mainloop_ivybridge_asm,            xmrig::CRYPTONIGHT_TRTL_ITER,   xmrig::CRYPTONIGHT_PICO_MASK);
+    patchCode(cn_trtl_mainloop_ryzen_asm,               cnv2_mainloop_ryzen_asm,                xmrig::CRYPTONIGHT_TRTL_ITER,   xmrig::CRYPTONIGHT_PICO_MASK);
+    patchCode(cn_trtl_mainloop_bulldozer_asm,           cnv2_mainloop_bulldozer_asm,            xmrig::CRYPTONIGHT_TRTL_ITER,   xmrig::CRYPTONIGHT_PICO_MASK);
+    patchCode(cn_trtl_double_mainloop_sandybridge_asm,  cnv2_double_mainloop_sandybridge_asm,   xmrig::CRYPTONIGHT_TRTL_ITER,   xmrig::CRYPTONIGHT_PICO_MASK);
+
+    Mem::protectExecutableMemory(base, allocation_size);
+    Mem::flushInstructionCache(base, allocation_size);
+}
+
 NAN_MODULE_INIT(init) {
+    patchAsmVariants();
+
     Nan::Set(target, Nan::New("cryptonight").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight)).ToLocalChecked());
     Nan::Set(target, Nan::New("cryptonight_async").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight_async)).ToLocalChecked());
     Nan::Set(target, Nan::New("cryptonight_light").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight_light)).ToLocalChecked());

@@ -36,6 +36,14 @@
 #endif
 
 struct cryptonight_ctx;
+
+namespace xmrig {
+    namespace CpuThread {
+        typedef void(*cn_mainloop_fun)(cryptonight_ctx*);
+        typedef void(*cn_mainloop_double_fun)(cryptonight_ctx*, cryptonight_ctx*);
+    }
+}
+
 typedef void(*cn_mainloop_fun_ms_abi)(cryptonight_ctx*) ABI_ATTRIBUTE;
 typedef void(*cn_mainloop_double_fun_ms_abi)(cryptonight_ctx*, cryptonight_ctx*) ABI_ATTRIBUTE;
 

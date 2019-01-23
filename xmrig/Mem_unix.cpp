@@ -28,7 +28,6 @@
 #include <sys/mman.h>
 
 
-#include "common/log/Log.h"
 #include "common/utils/mm_malloc.h"
 #include "common/xmrig.h"
 #include "crypto/CryptoNight.h"
@@ -66,7 +65,7 @@ void Mem::allocate(MemInfo &info, bool enabled)
     info.hugePages = info.pages;
 
     if (madvise(info.memory, info.size, MADV_RANDOM | MADV_WILLNEED) != 0) {
-        LOG_ERR("madvise failed");
+        //LOG_ERR("madvise failed");
     }
 
     if (mlock(info.memory, info.size) == 0) {
