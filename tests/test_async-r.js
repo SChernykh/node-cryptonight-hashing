@@ -8,7 +8,7 @@ let lr = lineReader.createInterface({
      input: fs.createReadStream('cryptonight-r.txt')
 });
 lr.on('line', function (line) {
-     let line_data = line.split(/ (.+)/);
+     let line_data = line.split(" ");
      line_count += 1;
      multiHashing.cryptonight_async(Buffer.from(line_data[1], 'hex'), 11, parseInt(line_data[2]), function(err, result){
          result = result.toString('hex');
