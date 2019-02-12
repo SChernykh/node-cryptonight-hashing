@@ -20,9 +20,9 @@ lr.on('line', function (line) {
          }
          if (line_count === (testsFailed + testsPassed)){
              if (testsFailed > 0){
-                 console.log(testsFailed + '/' + (testsPassed + testsFailed) + ' tests failed on: cryptonight_async');
+                 console.log(testsFailed + '/' + (testsPassed + testsFailed) + ' tests failed on: cryptonight-r64_async');
              } else {
-                 console.log(testsPassed + ' tests passed on: cryptonight_async');
+                 console.log(testsPassed + ' tests passed on: cryptonight-r64_async');
              }
          }
      });
