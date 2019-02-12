@@ -6,6 +6,7 @@ cd $DIR
 node compare_both.js
 node test.js
 node test_async.js
+node test_async-wow.js
 node test_async-r.js
 node test_async-r64.js
 node test_async_light.js
@@ -14,6 +15,7 @@ node test_async_pico.js
 node test_sync-1.js
 node test_sync-2.js
 node test_sync-half.js
+node test_sync-wow.js
 node test_sync-r.js
 node test_sync-r64.js
 node test_sync-xtl.js
@@ -32,4 +34,5 @@ node test_perf.js
 node test_perf_light.js
 node test_perf_heavy.js
 node test_perf_gpu.js
+node test_perf_wow.js
 node test_perf_pico.js

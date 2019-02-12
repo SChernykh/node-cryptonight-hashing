@@ -7,7 +7,7 @@ typedef void(*void_func)();
 #include "crypto/asm/CryptonightR_64_template.h"
 #include "Mem.h"
 
-#ifndef XMRIG_ARM
+#if !defined XMRIG_ARM && !defined XMRIG_NO_ASM
 
 static inline void add_code(uint8_t* &p, void (*p1)(), void (*p2)())
 {
@@ -34,7 +34,7 @@ static inline void add_random_math(uint8_t* &p, const V4_Instruction* code, int 
 
         const uint32_t a = inst.dst_index;
         const uint32_t b = inst.src_index;
-        const uint8_t c = opcode | (dst_index << V4_OPCODE_BITS) | (src_index << (V4_OPCODE_BITS + V4_DST_INDEX_BITS));
+        const uint8_t c = opcode | (dst_index << V4_OPCODE_BITS) | (((src_index == 8) ? dst_index : src_index) << (V4_OPCODE_BITS + V4_DST_INDEX_BITS));
 
         switch (inst.opcode) {
         case ROR:
