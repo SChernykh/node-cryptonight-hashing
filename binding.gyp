@@ -67,6 +67,11 @@
                 "xmrig/crypto/defyx/KeccakSpongeWidth1600.c",
                 "xmrig/crypto/defyx/yescrypt-best.c",
                 "xmrig/crypto/defyx/sha256.c",
+
+                "xmrig/crypto/astrobwt/AstroBWT.cpp",
+                '<!@(uname -a | grep "x86_64" >/dev/null && echo "xmrig/crypto/astrobwt/Salsa20.cpp" || echo)',
+                "xmrig/crypto/astrobwt/sha3.cpp",
+                '<!@(uname -a | grep "x86_64" >/dev/null || echo "xmrig/crypto/astrobwt/salsa20_ref/salsa20.c" || echo)',
             ],
             "include_dirs": [
                 "xmrig-override",

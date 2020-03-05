@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <nan.h>
 #include <stdexcept>
+#include <limits>
 
 //#if (defined(__AES__) && (__AES__ == 1)) || defined(__APPLE__) || defined(__ARM_ARCH)
 //#else
@@ -16,6 +17,7 @@
 #include "crypto/cn/CnHash.h"
 #include "crypto/randomx/randomx.h"
 #include "crypto/defyx/defyx.h"
+#include "crypto/astrobwt/AstroBWT.h"
 
 extern "C" {
 #include "crypto/defyx/KangarooTwelve.h"
@@ -52,7 +54,7 @@ extern "C" {
   #define FNA(algo) xmrig::CnHash::fn(xmrig::Algorithm::algo, SOFT_AES ? xmrig::CnHash::AV_SINGLE_SOFT : xmrig::CnHash::AV_SINGLE, xmrig::Assembly::NONE)
 #endif
 
-const size_t max_mem_size = 4 * 1024 * 1024;
+const size_t max_mem_size = 20 * 1024 * 1024;
 xmrig::VirtualMemory mem(max_mem_size, true, false, 0, 4096);
 static struct cryptonight_ctx* ctx = nullptr;
 static randomx_cache* rx_cache[xmrig::Algorithm::Id::MAX] = {nullptr};
@@ -456,6 +458,19 @@ NAN_METHOD(c29_cycle_hash) {
 	info.GetReturnValue().Set(returnValue);
 }
 
+NAN_METHOD(astrobwt) {
+    if (info.Length() < 1) return THROW_ERROR_EXCEPTION("You must provide one argument.");
+
+    Local<Object> target = info[0]->ToObject();
+    if (!Buffer::HasInstance(target)) return THROW_ERROR_EXCEPTION("Argument 1 should be a buffer object.");
+
+    char output[32];
+    xmrig::astrobwt::astrobwt_dero(Buffer::Data(target), Buffer::Length(target), mem.scratchpad(), reinterpret_cast<uint8_t*>(output), std::numeric_limits<int>::max());
+
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
+    info.GetReturnValue().Set(returnValue);
+}
+
 
 NAN_MODULE_INIT(init) {
     Nan::Set(target, Nan::New("cryptonight").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight)).ToLocalChecked());
@@ -468,6 +483,7 @@ NAN_MODULE_INIT(init) {
     Nan::Set(target, Nan::New("c29s").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(c29s)).ToLocalChecked());
     Nan::Set(target, Nan::New("c29v").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(c29v)).ToLocalChecked());
     Nan::Set(target, Nan::New("c29_cycle_hash").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(c29_cycle_hash)).ToLocalChecked());
+    Nan::Set(target, Nan::New("astrobwt").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(astrobwt)).ToLocalChecked());
 }
 
 NODE_MODULE(cryptonight, init)

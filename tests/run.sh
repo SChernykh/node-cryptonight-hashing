@@ -32,6 +32,7 @@ node test_rx_v.js
 node test_rx_switch.js
 node test_ar2_chukwa.js
 node test_ar2_wrkz.js
+node test_sync-astrobwt.js
 
 node test_perf.js
 node test_perf_k12.js
@@ -46,3 +47,4 @@ node test_perf_pico.js
 node test_perf_double.js
 node test_perf_ar2_chukwa.js
 node test_perf_ar2_wrkz.js
+node test_perf_astrobwt.js

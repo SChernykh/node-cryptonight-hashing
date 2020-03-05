@@ -80,6 +80,11 @@ xmrig::Algorithm::Family xmrig::Algorithm::family(Id id)
         return ARGON2;
 #   endif
 
+#   ifdef XMRIG_ALGO_ASTROBWT
+    case ASTROBWT_DERO:
+        return ASTROBWT;
+#   endif
+
     default:
         break;
     }

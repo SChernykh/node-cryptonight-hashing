@@ -33,6 +33,7 @@
 #define XMRIG_ALGO_CN_PICO  1
 #define XMRIG_ALGO_RANDOMX  1
 #define XMRIG_ALGO_ARGON2   1
+#define XMRIG_ALGO_ASTROBWT 1
 
 
 namespace xmrig {
@@ -69,6 +70,7 @@ public:
         RX_ARQ,        // "rx/arq"           RandomARQ (Arqma).
         AR2_CHUKWA,    // "argon2/chukwa"    Argon2id (Chukwa).
         AR2_WRKZ,      // "argon2/wrkz"      Argon2id (WRKZ)
+        ASTROBWT_DERO, // "astrobwt"         AstroBWT (Dero)
         MAX
     };
 
@@ -79,7 +81,8 @@ public:
         CN_HEAVY,
         CN_PICO,
         RANDOM_X,
-        ARGON2
+        ARGON2,
+        ASTROBWT
     };
 
     inline Algorithm()                                     {}
